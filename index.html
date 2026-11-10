@@ -22,6 +22,8 @@ legend{font-weight:700;padding:0 6px}
 .tegel:has(input:checked){background:var(--cheese);color:#2b1d0e;outline:3px solid var(--line)}
 .tegel:has(input:focus-visible){outline:3px dashed var(--accent)}
 @media(max-width:560px){.tegels{grid-template-columns:repeat(2,1fr)}}
+#keuzes{margin-bottom:14px}
+#keuzes summary{cursor:pointer;font-weight:700;margin-bottom:10px}
 #sug,#opt,#lijst{margin-top:22px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 14px}
 #sug summary,#opt summary,#lijst summary{cursor:pointer;font-weight:700}
 .sugrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
@@ -29,8 +31,14 @@ legend{font-weight:700;padding:0 6px}
 .sugrow .sn{flex:1 1 200px}
 .balk{height:22px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
 #balkvul{height:100%;width:0;background:var(--cheese)}
-#laden{margin:0 0 22px}
-#ladentekst{margin:8px 0 0;font-weight:700}
+/* Laadvenster staat buiten <main>, zodat het niet meeschudt met de tekst en vast bovenin blijft */
+#laden{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(560px,92vw);z-index:10;background:var(--card);color:var(--ink);border:3px solid var(--line);border-radius:10px;padding:14px 16px}
+#laden::before{content:"";position:absolute;inset:-10px;border:4px dashed var(--accent);border-radius:16px;pointer-events:none}
+#laden[hidden]{display:none}
+#ladentekst{margin:10px 0 0;font-weight:700;font-size:1.1rem}
+#balkvul{background:repeating-linear-gradient(45deg,var(--cheese) 0 14px,var(--accent) 14px 28px);background-size:40px 40px}
+@keyframes trip{0%{transform:translate(-4px,3px) rotate(-1.2deg)}25%{transform:translate(4px,-2px) rotate(1deg)}50%{transform:translate(-3px,-4px) rotate(-.6deg)}75%{transform:translate(3px,4px) rotate(1.2deg)}100%{transform:translate(-4px,3px) rotate(-1.2deg)}}
+@keyframes streep{to{background-position:40px 0}}
 .scroll{overflow-x:auto;margin-top:8px}
 #lijstbody{border-collapse:collapse;width:100%;font-size:.95rem}
 #lijstbody th,#lijstbody td{text-align:left;padding:5px 10px;border-bottom:1px solid color-mix(in srgb,var(--line) 25%,transparent);white-space:nowrap}
@@ -59,6 +67,7 @@ button.alt{background:var(--card);color:var(--ink)}
 .rij .lbl{flex:0 0 min(280px,42%)}
 .schaal{flex:0 0 auto;width:72px;height:72px;border:2px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem}
 .layer{border:2px solid var(--line);border-radius:10px;padding:2px 8px;text-align:center;color:#2b1d0e;font-size:1.3rem;line-height:1.5;overflow:hidden;white-space:nowrap}
+.layer span{filter:drop-shadow(0 0 1.5px rgba(43,29,14,.8))} /* emoji blijft zichtbaar op een gelijkkleurige laag */
 .layer.bread{min-height:2.2rem;border-radius:24px 24px 8px 8px}
 .layer.bread.onder{border-radius:8px 8px 24px 24px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -66,11 +75,12 @@ button.alt{background:var(--card);color:var(--ink)}
 footer{margin-top:28px;font-size:.85rem;opacity:.7}
 @keyframes gek{0%{transform:rotate(-2deg) scale(1)}25%{transform:rotate(3deg) scale(1.03)}50%{transform:rotate(-3deg) skewX(5deg)}75%{transform:rotate(2deg) scale(.97)}100%{transform:rotate(-2deg)}}
 @keyframes kleur{to{filter:hue-rotate(360deg)}}
-body.chaos{animation:kleur 2s linear infinite}
-body.chaos main{animation:gek .6s infinite}
+body.chaos main{animation:gek .6s infinite,kleur 2s linear infinite}
+body.chaos #laden::before{animation:trip .45s steps(1) infinite}
+body.chaos #balkvul{animation:streep .5s linear infinite}
 body.chaos .layer{animation:gek .35s infinite alternate}
 body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
-@media(prefers-reduced-motion:reduce){body.chaos,body.chaos *{animation:none!important}}
+@media(prefers-reduced-motion:reduce){body.chaos,body.chaos *,body.chaos #laden::before{animation:none!important}}
 </style>
 </head>
 <body>
@@ -78,6 +88,8 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <h1>Tosti-roulette</h1>
 <p class="sub">Een willekeurige tosti van beleg dat je waarschijnlijk al hebt.</p>
 
+<details id="keuzes" open>
+<summary>Je keuzes <span id="keuzesamen"></span></summary>
 <fieldset class="gekte"><legend>Hoe gek mag het?</legend>
 <div class="tegels">
 <label class="tegel"><input type="radio" name="wild" value="0" checked><span class="ico">🥪</span><span>Normaal</span></label>
@@ -127,9 +139,9 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <label class="opt"><input type="checkbox" name="allergy" value="groente">Groente</label>
 </fieldset>
 
-<button id="go">Maak een tosti</button>
+</details>
 
-<div id="laden" hidden><div class="balk"><div id="balkvul"></div></div><p id="ladentekst" aria-live="polite"></p></div>
+<button id="go">Maak een tosti</button>
 
 <section id="out" aria-live="polite">
 <h2 id="name"></h2>
@@ -164,6 +176,11 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <footer>Halal is hier geen varken en geen alcohol. Wil je het zeker weten, koop het vlees bij een halal slager. Het filter kijkt alleen naar het beleg zelf. Sporen en wat er in brood, ham of sauzen zit controleer je zelf.</footer>
 </main>
 
+<div id="laden" role="status" hidden>
+<div class="balk"><div id="balkvul"></div></div>
+<p id="ladentekst"></p>
+</div>
+
 <script>
 // v = vegetarisch, n = vegan, h = halal, w = minimale gekte (0 normaal, 1 apart, 2 chaos)
 const I = (name, v, n, h, w = 0) => ({ name, v, n, h, w });
@@ -196,8 +213,8 @@ const HEAT_ICON = ["", "🌶️", "🌶️🌶️", "🌶️🌶️🌶️🔥"]
 // emoji + kleur per laagje; onbekend ingrediënt valt terug op een bordje
 const ICON = {
   "wit brood": ["", "#f3d9a0"], "bruin brood": ["", "#c99a5b"], "volkoren brood": ["", "#a9743a"],
-  "jonge kaas": ["🧀", "#ffd54a"], "oude kaas": ["🧀", "#f0a92c"], "smeerkaas": ["🧀", "#fff1c2"], "geitenkaas": ["🐐", "#fffbe6"], "komijnenkaas": ["🧀", "#e8a23a"], "cherrytomaten": ["🍅", "#ff6f61"],
-  "kaas uit een blok, gewoon het goedkoopste": ["🧀", "#ffe066"],
+  "jonge kaas": ["🧀", "#fff1b8"], "oude kaas": ["🧀", "#f0a92c"], "smeerkaas": ["🧀", "#fbf3e0"], "geitenkaas": ["🐐", "#fffbe6"], "komijnenkaas": ["🧀", "#e8a23a"], "cherrytomaten": ["🍅", "#ff6f61"],
+  "kaas uit een blok, gewoon het goedkoopste": ["🧀", "#ffe3a0"],
   "ham": ["🐖", "#ffb3b3"], "kipfilet": ["🐔", "#ffe0c2"], "tonijn uit blik": ["🐟", "#f4b6a6"], "salami": ["🍖", "#d9605a"],
   "gebakken ei": ["🍳", "#fffdf0"], "rundvlees plakjes": ["🐄", "#c9776b"], "hummus": ["🧆", "#e6cf9b"], "pindakaas": ["🥜", "#c8935a"],
   "gebakken champignons": ["🍄", "#d8c2a8"], "spinazie": ["🥬", "#8fcf7a"], "gesmolten spek": ["🥓", "#e88f84"], "ananas": ["🍍", "#ffe34d"],
@@ -282,6 +299,8 @@ function make() {
     + row(bl("onder"), bread + " (onder)") + `</div>` + dip;
   $("#heatline").innerHTML = heat === 3 ? `<span class="warn">Eet dit niet vlak voor een afspraak.</span>` : "";
   $("#out").style.display = "block";
+  $("#keuzesamen").textContent = "(" + (tags || "geen beperkingen") + ")";
+  $("#keuzes").open = false; // de tosti komt dan bovenaan te staan, open het menu om iets aan te passen
   last = `${name}: ` + lines.join(", ");
 }
 
@@ -314,12 +333,12 @@ document.addEventListener("keydown", (e) => {
   const iv = setInterval(() => {
     const p = Math.min((Date.now() - start) / duur, 1); // de balk is JS, dus hij blijft ook zonder animaties zichtbaar
     $("#balkvul").style.width = p * 100 + "%";
-    $("#ladentekst").textContent = LADEN[Math.min(Math.floor(p * LADEN.length), LADEN.length - 1)];
+    $("#ladentekst").textContent = LADEN[Math.min(Math.floor(p * LADEN.length), LADEN.length - 1)] + " " + Math.round(p * 100) + "%";
     if (p < 1) return;
     clearInterval(iv);
     $("#laden").hidden = true;
     make();
-    setTimeout(() => { document.body.classList.remove("chaos"); busy = false; }, 3000);
+    setTimeout(() => { document.body.classList.remove("chaos"); busy = false; }, 1500);
   }, 100);
 });
 
