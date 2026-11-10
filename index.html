@@ -10,11 +10,18 @@
 @media(prefers-color-scheme:dark){:root{--bg:#1d1409;--ink:#fbeacb;--card:#2a1d0f;--line:#fbeacb}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,sans-serif}
-main{max-width:880px;margin:0 auto;padding:24px 16px 64px}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
 h1{font-size:2.2rem;margin:0 0 4px;letter-spacing:-.02em}
 .sub{margin:0 0 24px;opacity:.8}
 fieldset{border:1px solid var(--line);border-radius:6px;margin:0 0 14px;padding:10px 14px 14px;background:var(--card)}
 legend{font-weight:700;padding:0 6px}
+.tegels{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+.tegel{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-weight:700;font-size:1.05rem;cursor:pointer;text-align:center}
+.tegel input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.tegel .ico{font-size:2.4rem;line-height:1}
+.tegel:has(input:checked){background:var(--cheese);color:#2b1d0e;outline:3px solid var(--line)}
+.tegel:has(input:focus-visible){outline:3px dashed var(--accent)}
+@media(max-width:560px){.tegels{grid-template-columns:repeat(2,1fr)}}
 label.opt{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;cursor:pointer}
 input[type=radio],input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 button{font:inherit;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:12px 20px;cursor:pointer;background:var(--cheese);color:#2b1d0e}
@@ -25,13 +32,14 @@ button.alt{background:var(--card);color:var(--ink)}
 #out h2{margin:0 0 2px;font-size:1.5rem}
 #out .tags{opacity:.75;margin:0 0 12px;font-size:.9rem}
 #out .heat{font-size:1.3rem}
-#pic{margin:12px 0 16px}
+#pic{margin:12px 0 16px;display:flex;gap:36px;align-items:center;flex-wrap:wrap}
+.stapel{flex:1 1 420px;min-width:0}
+.dip{flex:0 0 170px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .rij{display:flex;align-items:center;gap:24px;margin-top:-2px}
-.rij .layer{flex:0 0 min(320px,55%)}
+.rij .layer{flex:1 1 auto;min-width:0}
 .lbl{font-size:1.1rem}
-.ernaast{margin-top:14px}
-.schaal{flex:0 0 auto;width:56px;height:56px;border:2px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;}
-.mid{flex:0 0 min(320px,55%);display:flex;justify-content:center}
+.rij .lbl{flex:0 0 min(280px,42%)}
+.schaal{flex:0 0 auto;width:72px;height:72px;border:2px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem}
 .layer{border:2px solid var(--line);border-radius:10px;padding:2px 8px;text-align:center;color:#2b1d0e;font-size:1.3rem;line-height:1.5;overflow:hidden;white-space:nowrap}
 .layer.bread{min-height:2.2rem;border-radius:24px 24px 8px 8px}
 .layer.bread.onder{border-radius:8px 8px 24px 24px}
@@ -51,6 +59,15 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <main>
 <h1>Tosti-roulette</h1>
 <p class="sub">Een willekeurige tosti van beleg dat je waarschijnlijk al hebt.</p>
+
+<fieldset class="gekte"><legend>Hoe gek mag het?</legend>
+<div class="tegels">
+<label class="tegel"><input type="radio" name="wild" value="0" checked><span class="ico">🥪</span><span>Normaal</span></label>
+<label class="tegel"><input type="radio" name="wild" value="1"><span class="ico">🍍</span><span>Apart</span></label>
+<label class="tegel"><input type="radio" name="wild" value="2"><span class="ico">🤪</span><span>Chaos</span></label>
+<label class="tegel"><input type="radio" name="wild" value="r"><span class="ico">🎲</span><span>Verrassing</span></label>
+</div>
+</fieldset>
 
 <fieldset><legend>Waar maak je hem?</legend>
 <label class="opt"><input type="radio" name="place" value="home" checked>Thuis</label>
@@ -80,13 +97,6 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <fieldset><legend>Vlees</legend>
 <label class="opt"><input type="radio" name="meat" value="1" checked>Normaal</label>
 <label class="opt"><input type="radio" name="meat" value="2">Extra vlees</label>
-</fieldset>
-
-<fieldset><legend>Hoe gek mag het?</legend>
-<label class="opt"><input type="radio" name="wild" value="0" checked>Normaal</label>
-<label class="opt"><input type="radio" name="wild" value="1">Apart</label>
-<label class="opt"><input type="radio" name="wild" value="2">Chaos</label>
-<label class="opt"><input type="radio" name="wild" value="r">Verrassing</label>
 </fieldset>
 
 <fieldset><legend>Allergieën: dit krijg je niet</legend>
@@ -181,28 +191,34 @@ function okFor(diet, wild, place, allergies) {
 
 let last = "";
 function make() {
-  const h = val("heat"), heat = h === "r" ? Math.floor(Math.random() * 4) : +h;
-  const diet = val("diet"), wild = val("wild") === "r" ? Math.floor(Math.random() * 3) : +val("wild"),
+  const wild = val("wild") === "r" ? Math.floor(Math.random() * 3) : +val("wild");
+  const h = val("heat"), heat = wild === 2 || h === "r" ? Math.floor(Math.random() * 4) : +h; // chaos = pittigheid ook willekeurig
+  const diet = val("diet"),
     allergies = [...document.querySelectorAll("input[name=allergy]:checked")].map((x) => x.value),
     office = val("place") === "office";
   const ok = okFor(diet, wild, val("place"), allergies);
   const f = (a) => a.filter(ok);
-  const extraMeat = val("meat") === "2";
+  const chaos = wild === 2; // chaos = altijd extra kaas, extra vlees en willekeurige pittigheid
+  const extraMeat = chaos || val("meat") === "2";
   const meats = f(FILL).filter((x) => !x.v);
   const main = pick(diet === "meat" || extraMeat ? meats : f(FILL)); // gewoon vlees en extra vlees: altijd echt vlees (of tonijn)
   const extra = extraMeat ? pickN(meats.filter((x) => x !== main), 1) : [];
   const sauce = wild ? pick(f(SAUCE)) : null; // saus staat ernaast, niet erop
-  const parts = [
-    pick(f(BREAD)),
-    ...pickN(f(CHEESE), +val("cheese")),
-    main,
-    ...extra,
-    // normaal = brood, kaas en vlees. Groente en saus komen er pas bij Apart/Chaos bij
-    ...(wild ? pickN(f(VEG), office ? +(Math.random() < 0.5) : wild) : []),
+  const bread = pick(f(BREAD)).name;
+  const cheeses = pickN(f(CHEESE), chaos ? 2 : +val("cheese")).map((c) => c.name);
+  // normaal = brood, kaas en vlees. Groente en saus komen er pas bij Apart/Chaos bij
+  const fillings = [main, ...extra, ...(wild ? pickN(f(VEG), office ? +(Math.random() < 0.5) : wild) : [])].map((x) => x.name);
+  // van boven naar beneden. Sambal is een smeersel: direct onder of boven het brood. Bij twee kazen ligt er één onderop.
+  const sambal = heat ? [{ key: "#heat" + heat, label: HEAT[heat] }] : [];
+  const sambalTop = Math.random() < 0.5;
+  const as = (n) => ({ key: n, label: n });
+  const stack = [
+    ...(sambalTop ? sambal : []),
+    ...(cheeses.length === 2 ? [as(cheeses[0]), ...fillings.map(as), as(cheeses[1])] : [...cheeses, ...fillings].map(as)),
+    ...(sambalTop ? [] : sambal),
   ];
-  const lines = parts.map((p) => p.name);
-  if (heat) lines.push(HEAT[heat]);
-  if (sauce) lines.push("ernaast: " + sauce.name);
+  const lines = [bread, ...stack.map((l) => l.label)];
+  if (sauce) lines.push("dipsaus: " + sauce.name);
   const name = `De ${pick(ADJ)} ${main.name.split(" ")[0]}`;
   const tags = [val("place") === "office" ? "kantoor" : "",diet === "all" ? "" : diet === "meat" ? "gewoon vlees" : diet,["", "pittig", "heet", "levensgevaarlijk heet"][heat], allergies.length ? "zonder " + allergies.join(", ") : ""].filter(Boolean).join(" · ");
 
@@ -213,18 +229,28 @@ function make() {
     const [e, c] = ICON[n] || ["🍽️", "#ddd"];
     return `<div class="layer" style="background:${c}"><span>${e.repeat(5)}</span></div>`;
   };
-  const [bread, ...rest] = parts.map((p) => p.name);
   const bl = (c = "") => `<div class="layer bread ${c}" style="background:${ICON[bread][1]}"></div>`;
   const row = (bar, label) => `<div class="rij">${bar}<span class="lbl">${label}</span></div>`;
-  $("#pic").innerHTML = row(bl(), bread + " (boven)")
-    + rest.map((n) => row(layer(n), n)).join("")
-    + (heat ? row(layer("#heat" + heat), HEAT[heat]) : "")
-    + row(bl("onder"), bread + " (onder)")
-    + (sauce ? `<div class="rij ernaast"><div class="mid"><div class="schaal" style="background:${(ICON[sauce.name] || [0, "#ddd"])[1]}">${(ICON[sauce.name] || ["🍽️"])[0]}</div></div><span class="lbl">ernaast: ${sauce.name}</span></div>` : "");
+  const dip = sauce ? `<div class="dip"><div class="schaal" style="background:${(ICON[sauce.name] || [0, "#ddd"])[1]}">${(ICON[sauce.name] || ["🍽️"])[0]}</div><span class="lbl">dipsaus: ${sauce.name}</span></div>` : "";
+  $("#pic").innerHTML = `<div class="stapel">` + row(bl(), bread + " (boven)")
+    + stack.map((l) => row(layer(l.key), l.label)).join("")
+    + row(bl("onder"), bread + " (onder)") + `</div>` + dip;
   $("#heatline").innerHTML = heat === 3 ? `<span class="warn">Eet dit niet vlak voor een afspraak.</span>` : "";
   $("#out").style.display = "block";
   last = `${name}: ` + lines.join(", ");
 }
+
+// Chaos zet extra kaas, extra vlees en pittigheid op verrassing en slot die keuzes
+const syncChaos = () => {
+  const chaos = val("wild") === "2";
+  if (chaos) {
+    document.querySelector("input[name=cheese][value='2']").checked = true;
+    document.querySelector("input[name=meat][value='2']").checked = true;
+    document.querySelector("input[name=heat][value='r']").checked = true;
+  }
+  document.querySelectorAll("input[name=cheese],input[name=meat],input[name=heat]").forEach((x) => (x.disabled = chaos));
+};
+document.querySelectorAll("input[name=wild]").forEach((r) => (r.onchange = syncChaos));
 
 // easter egg: typ "chaos" ergens op de pagina
 let typed = "";
@@ -232,6 +258,7 @@ document.addEventListener("keydown", (e) => {
   typed = (typed + e.key).slice(-5).toLowerCase();
   if (typed !== "chaos") return;
   document.querySelector("input[name=wild][value='2']").checked = true;
+  syncChaos();
   make();
   document.body.classList.add("chaos");
   setTimeout(() => document.body.classList.remove("chaos"), 8000);
