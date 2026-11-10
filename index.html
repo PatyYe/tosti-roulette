@@ -22,11 +22,19 @@ legend{font-weight:700;padding:0 6px}
 .tegel:has(input:checked){background:var(--cheese);color:#2b1d0e;outline:3px solid var(--line)}
 .tegel:has(input:focus-visible){outline:3px dashed var(--accent)}
 @media(max-width:560px){.tegels{grid-template-columns:repeat(2,1fr)}}
-#sug,#opt{margin-top:22px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 14px}
-#sug summary,#opt summary{cursor:pointer;font-weight:700}
+#sug,#opt,#lijst{margin-top:22px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 14px}
+#sug summary,#opt summary,#lijst summary{cursor:pointer;font-weight:700}
 .sugrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .sugrow input,.sugrow select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 .sugrow .sn{flex:1 1 200px}
+.balk{height:22px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
+#balkvul{height:100%;width:0;background:var(--cheese)}
+#laden{margin:0 0 22px}
+#ladentekst{margin:8px 0 0;font-weight:700}
+.scroll{overflow-x:auto;margin-top:8px}
+#lijstbody{border-collapse:collapse;width:100%;font-size:.95rem}
+#lijstbody th,#lijstbody td{text-align:left;padding:5px 10px;border-bottom:1px solid color-mix(in srgb,var(--line) 25%,transparent);white-space:nowrap}
+#lijstbody tr.uit{opacity:.35}
 .tel{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:1.1rem}
 .tel b{font-size:1.4rem;margin-left:auto}
 .sub2{font-size:.85rem;opacity:.75}
@@ -121,6 +129,8 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 
 <button id="go">Maak een tosti</button>
 
+<div id="laden" hidden><div class="balk"><div id="balkvul"></div></div><p id="ladentekst" aria-live="polite"></p></div>
+
 <section id="out" aria-live="polite">
 <h2 id="name"></h2>
 <p class="tags" id="tags"></p>
@@ -132,6 +142,12 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <details id="opt">
 <summary>Hoeveel verschillende tosti's zijn er? <span id="opttotal"></span></summary>
 <div id="optbody"></div>
+</details>
+
+<details id="lijst">
+<summary>Welke ingrediënten zijn er? <span id="lijsttotal"></span></summary>
+<div class="scroll"><table id="lijstbody"></table></div>
+<p class="sub2">Grijs betekent: past niet bij je huidige keuzes.</p>
 </details>
 
 <details id="sug" hidden>
@@ -283,15 +299,28 @@ const syncChaos = () => {
 document.querySelectorAll("input[name=wild]").forEach((r) => (r.onchange = syncChaos));
 
 // easter egg: typ "chaos" ergens op de pagina
-let typed = "";
+let typed = "", busy = false;
+const LADEN = ["Kaas aan het raspen…", "Sambal aan het roeren…", "Brood aan het smeren…", "Toch maar extra kaas erbij…", "Pan voorverwarmen…", "Bijna klaar…"];
 document.addEventListener("keydown", (e) => {
   typed = (typed + e.key).slice(-5).toLowerCase();
-  if (typed !== "chaos") return;
+  if (typed !== "chaos" || busy) return;
+  busy = true;
   document.querySelector("input[name=wild][value='2']").checked = true;
   syncChaos();
-  make();
+  $("#out").style.display = "none";
+  $("#laden").hidden = false;
   document.body.classList.add("chaos");
-  setTimeout(() => document.body.classList.remove("chaos"), 8000);
+  const duur = 5000, start = Date.now();
+  const iv = setInterval(() => {
+    const p = Math.min((Date.now() - start) / duur, 1); // de balk is JS, dus hij blijft ook zonder animaties zichtbaar
+    $("#balkvul").style.width = p * 100 + "%";
+    $("#ladentekst").textContent = LADEN[Math.min(Math.floor(p * LADEN.length), LADEN.length - 1)];
+    if (p < 1) return;
+    clearInterval(iv);
+    $("#laden").hidden = true;
+    make();
+    setTimeout(() => { document.body.classList.remove("chaos"); busy = false; }, 3000);
+  }, 100);
 });
 
 
@@ -355,8 +384,22 @@ function renderCounts() {
   $("#optbody").innerHTML = modes.map(([e, t], i) => `<div class="tel"><span>${e} ${t}</span><b>${n(vals[i])}</b></div>`).join("")
     + `<p class="sub2">Met je huidige keuzes en ${ingredients} ingrediënten. De volgorde van de lagen telt mee. Elk nieuw ingrediënt maakt het getal groter.</p>`;
 }
-document.addEventListener("change", renderCounts);
+// Tabel met alle ingrediënten. Rijen die niet bij je huidige keuzes passen worden grijs.
+function renderTable() {
+  const w = val("wild") === "r" ? 2 : +val("wild");
+  const ok = okFor(val("diet"), w, val("place"), uitgesloten());
+  const mode = ["Normaal", "Apart", "Chaos"];
+  const ja = (b) => (b ? "✓" : "–");
+  const groups = [["Brood", BREAD], ["Kaas", CHEESE], ["Beleg", FILL], ["Groente", VEG], ["Dipsaus", SAUCE]];
+  const rows = groups.flatMap(([soort, a]) => a.map((x) => ({ soort, x })));
+  $("#lijsttotal").textContent = "(" + (rows.length + 3) + ")";
+  $("#lijstbody").innerHTML = "<tr><th>Soort</th><th>Ingrediënt</th><th>Kantoor</th><th>Halal</th><th>Vanaf</th><th>Bevat</th></tr>"
+    + rows.map(({ soort, x }) => `<tr class="${ok(x) ? "" : "uit"}"><td>${soort}</td><td>${x.name}</td><td>${ja(!NOT_AT_OFFICE.has(x.name))}</td><td>${ja(x.h)}</td><td>${mode[x.w]}</td><td>${(ALLERGEN[x.name] || "").replace(" ", ", ")}</td></tr>`).join("")
+    + HEAT.slice(1).map((t) => `<tr><td>Pittigheid</td><td>${t}</td><td>✓</td><td>✓</td><td>Normaal</td><td></td></tr>`).join("");
+}
+document.addEventListener("change", () => { renderCounts(); renderTable(); });
 renderCounts();
+renderTable();
 
 $("#go").onclick = $("#again").onclick = make;
 $("#copy").onclick = async () => {
