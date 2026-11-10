@@ -14,3 +14,5 @@ Neemt suggesties van de site aan en maakt er één GitHub-issue van. Zonder dit 
 4. Zet bovenin het script van `index.html` bij `SUGGEST` de worker-URL en de Turnstile-sitekey. Dan verschijnt het formulier.
 
 Het issue krijgt het label `suggestie`. Maak dat label aan in de repo als het er nog niet is.
+
+Suggesties zijn anoniem: er wordt niets over de bezoeker opgeslagen.

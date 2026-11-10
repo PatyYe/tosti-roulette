@@ -22,11 +22,14 @@ legend{font-weight:700;padding:0 6px}
 .tegel:has(input:checked){background:var(--cheese);color:#2b1d0e;outline:3px solid var(--line)}
 .tegel:has(input:focus-visible){outline:3px dashed var(--accent)}
 @media(max-width:560px){.tegels{grid-template-columns:repeat(2,1fr)}}
-#sug{margin-top:22px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 14px}
-#sug summary{cursor:pointer;font-weight:700}
+#sug,#opt{margin-top:22px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 14px}
+#sug summary,#opt summary{cursor:pointer;font-weight:700}
 .sugrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .sugrow input,.sugrow select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 .sugrow .sn{flex:1 1 200px}
+.tel{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:1.1rem}
+.tel b{font-size:1.4rem;margin-left:auto}
+.sub2{font-size:.85rem;opacity:.75}
 .hp{position:absolute;left:-9999px}
 #sugform .row{margin-top:10px}
 label.opt{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;cursor:pointer}
@@ -125,6 +128,11 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <p class="heat" id="heatline"></p>
 <div class="row"><button class="alt" id="again">Nog een</button><button class="alt" id="copy">Kopieer</button></div>
 </section>
+
+<details id="opt">
+<summary>Hoeveel verschillende tosti's zijn er? <span id="opttotal"></span></summary>
+<div id="optbody"></div>
+</details>
 
 <details id="sug" hidden>
 <summary>Mis je iets? Stel een ingrediënt voor</summary>
@@ -318,6 +326,37 @@ if (SUGGEST.worker && SUGGEST.sitekey) {
     window.turnstile?.reset();
   };
 }
+
+// Hoeveel verschillende tosti's kunnen er per mode komen, met de huidige keuzes (thuis/kantoor, dieet, uitsluiten, kaas, vlees, pittigheid)
+const perm = (n, k) => { let r = 1; for (let i = 0; i < k; i++) r *= Math.max(n - i, 0); return r; };
+const uitgesloten = () => [...document.querySelectorAll("input[name=allergy]:checked")].map((x) => x.value);
+function count(w) {
+  const place = val("place"), office = place === "office", diet = val("diet"), chaos = w === 2;
+  const f = (a) => a.filter(okFor(diet, w, place, uitgesloten()));
+  const nCheese = f(CHEESE).length, k = Math.min(chaos ? 2 : +val("cheese"), nCheese);
+  const cheeseWays = k === 2 ? perm(nCheese, 2) : k === 1 ? nCheese : 1;
+  const meats = f(FILL).filter((x) => !x.v).length, extra = chaos || val("meat") === "2";
+  const pool = diet === "meat" || extra ? meats : f(FILL).length;
+  const mainWays = extra && meats >= 2 ? perm(meats, 2) : pool;
+  const nVeg = f(VEG).length;
+  const vegWays = w === 0 ? 1 : office ? 1 + nVeg : chaos ? perm(nVeg, Math.min(2, nVeg)) : nVeg || 1;
+  const sauceWays = w ? f(SAUCE).length || 1 : 1;
+  const h = val("heat"); // sambal ligt boven of onder het brood, dus pittig telt dubbel
+  const heatWays = chaos ? (h === "r" || h === "0" ? 6 : 2) : h === "r" ? 7 : h === "0" ? 1 : 2;
+  return f(BREAD).length * cheeseWays * mainWays * vegWays * sauceWays * heatWays;
+}
+function renderCounts() {
+  const modes = [["🥪", "Normaal", 0], ["🍍", "Apart", 1], ["🤪", "Chaos", 2]];
+  const n = (x) => x.toLocaleString("nl-NL");
+  const vals = modes.map(([, , w]) => count(w));
+  const ok = okFor(val("diet"), 2, val("place"), uitgesloten());
+  const ingredients = [BREAD, CHEESE, FILL, VEG, SAUCE].reduce((t, a) => t + a.filter(ok).length, 0) + 3; // +3 pittigheidsniveaus
+  $("#opttotal").textContent = "(" + n(Math.max(...vals)) + " bij Chaos)";
+  $("#optbody").innerHTML = modes.map(([e, t], i) => `<div class="tel"><span>${e} ${t}</span><b>${n(vals[i])}</b></div>`).join("")
+    + `<p class="sub2">Met je huidige keuzes en ${ingredients} ingrediënten. De volgorde van de lagen telt mee. Elk nieuw ingrediënt maakt het getal groter.</p>`;
+}
+document.addEventListener("change", renderCounts);
+renderCounts();
 
 $("#go").onclick = $("#again").onclick = make;
 $("#copy").onclick = async () => {
