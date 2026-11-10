@@ -30,14 +30,21 @@ button.alt{background:var(--card);color:var(--ink)}
 .rij .layer{flex:0 0 min(320px,55%)}
 .lbl{font-size:1.1rem}
 .ernaast{margin-top:14px}
-.schaal{flex:0 0 auto;width:56px;height:56px;border:2px solid #2b1d0e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;}
+.schaal{flex:0 0 auto;width:56px;height:56px;border:2px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;}
 .mid{flex:0 0 min(320px,55%);display:flex;justify-content:center}
-.layer{border:2px solid #2b1d0e;border-radius:10px;padding:2px 8px;text-align:center;color:#2b1d0e;font-size:1.3rem;line-height:1.5;overflow:hidden;white-space:nowrap}
+.layer{border:2px solid var(--line);border-radius:10px;padding:2px 8px;text-align:center;color:#2b1d0e;font-size:1.3rem;line-height:1.5;overflow:hidden;white-space:nowrap}
 .layer.bread{min-height:2.2rem;border-radius:24px 24px 8px 8px}
-.rij:last-child .layer.bread{border-radius:8px 8px 24px 24px}
+.layer.bread.onder{border-radius:8px 8px 24px 24px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .warn{color:var(--accent);font-weight:700}
 footer{margin-top:28px;font-size:.85rem;opacity:.7}
+@keyframes gek{0%{transform:rotate(-2deg) scale(1)}25%{transform:rotate(3deg) scale(1.03)}50%{transform:rotate(-3deg) skewX(5deg)}75%{transform:rotate(2deg) scale(.97)}100%{transform:rotate(-2deg)}}
+@keyframes kleur{to{filter:hue-rotate(360deg)}}
+body.chaos{animation:kleur 2s linear infinite}
+body.chaos main{animation:gek .6s infinite}
+body.chaos .layer{animation:gek .35s infinite alternate}
+body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
+@media(prefers-reduced-motion:reduce){body.chaos,body.chaos *{animation:none!important}}
 </style>
 </head>
 <body>
@@ -207,19 +214,30 @@ function make() {
     return `<div class="layer" style="background:${c}"><span>${e.repeat(5)}</span></div>`;
   };
   const [bread, ...rest] = parts.map((p) => p.name);
-  const bl = `<div class="layer bread" style="background:${ICON[bread][1]}"></div>`;
+  const bl = (c = "") => `<div class="layer bread ${c}" style="background:${ICON[bread][1]}"></div>`;
   const row = (bar, label) => `<div class="rij">${bar}<span class="lbl">${label}</span></div>`;
-  $("#pic").innerHTML = row(bl, bread + " (boven)")
+  $("#pic").innerHTML = row(bl(), bread + " (boven)")
     + rest.map((n) => row(layer(n), n)).join("")
     + (heat ? row(layer("#heat" + heat), HEAT[heat]) : "")
-    + row(bl, bread + " (onder)")
+    + row(bl("onder"), bread + " (onder)")
     + (sauce ? `<div class="rij ernaast"><div class="mid"><div class="schaal" style="background:${(ICON[sauce.name] || [0, "#ddd"])[1]}">${(ICON[sauce.name] || ["🍽️"])[0]}</div></div><span class="lbl">ernaast: ${sauce.name}</span></div>` : "");
   $("#heatline").innerHTML = heat === 3 ? `<span class="warn">Eet dit niet vlak voor een afspraak.</span>` : "";
   $("#out").style.display = "block";
   last = `${name}: ` + lines.join(", ");
 }
 
-$("#go").onclick =$("#again").onclick = make;
+// easter egg: typ "chaos" ergens op de pagina
+let typed = "";
+document.addEventListener("keydown", (e) => {
+  typed = (typed + e.key).slice(-5).toLowerCase();
+  if (typed !== "chaos") return;
+  document.querySelector("input[name=wild][value='2']").checked = true;
+  make();
+  document.body.classList.add("chaos");
+  setTimeout(() => document.body.classList.remove("chaos"), 8000);
+});
+
+$("#go").onclick = $("#again").onclick = make;
 $("#copy").onclick = async () => {
   try { await navigator.clipboard.writeText(last); $("#copy").textContent = "Gekopieerd"; }
   catch { $("#copy").textContent = "Kopiëren lukt niet"; }
