@@ -22,6 +22,13 @@ legend{font-weight:700;padding:0 6px}
 .tegel:has(input:checked){background:var(--cheese);color:#2b1d0e;outline:3px solid var(--line)}
 .tegel:has(input:focus-visible){outline:3px dashed var(--accent)}
 @media(max-width:560px){.tegels{grid-template-columns:repeat(2,1fr)}}
+#sug{margin-top:22px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:10px 14px}
+#sug summary{cursor:pointer;font-weight:700}
+.sugrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.sugrow input,.sugrow select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.sugrow .sn{flex:1 1 200px}
+.hp{position:absolute;left:-9999px}
+#sugform .row{margin-top:10px}
 label.opt{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;cursor:pointer}
 input[type=radio],input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 button{font:inherit;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:12px 20px;cursor:pointer;background:var(--cheese);color:#2b1d0e}
@@ -99,13 +106,14 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <label class="opt"><input type="radio" name="meat" value="2">Extra vlees</label>
 </fieldset>
 
-<fieldset><legend>Allergieën: dit krijg je niet</legend>
+<fieldset><legend>Uitsluiten: dit krijg je niet</legend>
 <label class="opt"><input type="checkbox" name="allergy" value="pinda">Pinda</label>
 <label class="opt"><input type="checkbox" name="allergy" value="noten">Noten</label>
 <label class="opt"><input type="checkbox" name="allergy" value="melk">Melk (dus ook geen kaas)</label>
 <label class="opt"><input type="checkbox" name="allergy" value="ei">Ei</label>
 <label class="opt"><input type="checkbox" name="allergy" value="vis">Vis</label>
 <label class="opt"><input type="checkbox" name="allergy" value="mosterd">Mosterd</label>
+<label class="opt"><input type="checkbox" name="allergy" value="groente">Groente</label>
 </fieldset>
 
 <button id="go">Maak een tosti</button>
@@ -118,7 +126,18 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <div class="row"><button class="alt" id="again">Nog een</button><button class="alt" id="copy">Kopieer</button></div>
 </section>
 
-<footer>Halal is hier geen varken en geen alcohol. Wil je het zeker weten, koop het vlees bij een halal slager. De allergiefilter kijkt alleen naar het beleg zelf. Sporen en wat er in brood, ham of sauzen zit controleer je zelf.</footer>
+<details id="sug" hidden>
+<summary>Mis je iets? Stel een ingrediënt voor</summary>
+<form id="sugform">
+<div id="sugrows"></div>
+<input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+<div id="ts"></div>
+<div class="row"><button type="button" class="alt" id="sugadd">+ Nog een</button><button type="submit">Versturen</button></div>
+<p id="sugmsg" aria-live="polite"></p>
+</form>
+</details>
+
+<footer>Halal is hier geen varken en geen alcohol. Wil je het zeker weten, koop het vlees bij een halal slager. Het filter kijkt alleen naar het beleg zelf. Sporen en wat er in brood, ham of sauzen zit controleer je zelf.</footer>
 </main>
 
 <script>
@@ -165,9 +184,11 @@ const ICON = {
   "pindasaus": ["🥜", "#d8a368"], "appelstroop": ["🍏", "#a8672b"], "currysaus": ["🟠", "#f0b84a"],
   "#heat1": ["🌶️", "#ff9a8a"], "#heat2": ["🌶️", "#ff5a4a"], "#heat3": ["🔥", "#d6221a"],
 };
-// Allergenen per ingrediënt. Grof filter op de ingrediënten zelf, zonder sporen of wat er in brood en saus zit.
+// Uit te sluiten per ingrediënt (allergenen, plus groente). Grof filter op de ingrediënten zelf, zonder sporen of wat er in brood en saus zit.
 const ALLERGEN = {
   pindakaas: "pinda", pindasaus: "pinda", pesto: "noten melk", "gebakken ei": "ei", mayonaise: "ei", "tonijn uit blik": "vis", mosterd: "mosterd",
+  tomaat: "groente", cherrytomaten: "groente", ui: "groente", "rode ui": "groente", paprika: "groente", augurk: "groente", komkommer: "groente", zuurkool: "groente",
+  spinazie: "groente", "gebakken champignons": "groente",
   "jonge kaas": "melk", "oude kaas": "melk", smeerkaas: "melk", geitenkaas: "melk", komijnenkaas: "melk", "kaas uit een blok, gewoon het goedkoopste": "melk",
 };
 const ADJ =["Wanhopige", "Gouden", "Late-avond", "Verdachte", "Heilige", "Stevige", "Kleffe", "Luxe", "Slordige", "Sluwe"];
@@ -192,7 +213,7 @@ function okFor(diet, wild, place, allergies) {
 let last = "";
 function make() {
   const wild = val("wild") === "r" ? Math.floor(Math.random() * 3) : +val("wild");
-  const h = val("heat"), heat = wild === 2 || h === "r" ? Math.floor(Math.random() * 4) : +h; // chaos = pittigheid ook willekeurig
+  const h = val("heat"), heat = wild === 2 && (h === "r" || h === "0") ? 1 + Math.floor(Math.random() * 3) : h === "r" ? Math.floor(Math.random() * 4) : +h; // verrassing: 0-3, alleen bij chaos altijd pittig (1-3)
   const diet = val("diet"),
     allergies = [...document.querySelectorAll("input[name=allergy]:checked")].map((x) => x.value),
     office = val("place") === "office";
@@ -240,7 +261,7 @@ function make() {
   last = `${name}: ` + lines.join(", ");
 }
 
-// Chaos zet extra kaas, extra vlees en pittigheid op verrassing en slot die keuzes
+// Chaos zet extra kaas en extra vlees vast, zet pittigheid standaard op verrassing en verbiedt "niks"
 const syncChaos = () => {
   const chaos = val("wild") === "2";
   if (chaos) {
@@ -248,7 +269,8 @@ const syncChaos = () => {
     document.querySelector("input[name=meat][value='2']").checked = true;
     document.querySelector("input[name=heat][value='r']").checked = true;
   }
-  document.querySelectorAll("input[name=cheese],input[name=meat],input[name=heat]").forEach((x) => (x.disabled = chaos));
+  document.querySelectorAll("input[name=cheese],input[name=meat]").forEach((x) => (x.disabled = chaos));
+  document.querySelectorAll("input[name=heat]").forEach((x) => (x.disabled = chaos && x.value === "0")); // bij chaos kan "niks" niet
 };
 document.querySelectorAll("input[name=wild]").forEach((r) => (r.onchange = syncChaos));
 
@@ -263,6 +285,39 @@ document.addEventListener("keydown", (e) => {
   document.body.classList.add("chaos");
   setTimeout(() => document.body.classList.remove("chaos"), 8000);
 });
+
+
+// Suggestieformulier: staat uit tot de worker is uitgerold (zie worker/README.md)
+const SUGGEST = { worker: "https://tosti-suggesties.patyye.workers.dev", sitekey: "0x4AAAAAAF7589I5OWycooIO" };
+if (SUGGEST.worker && SUGGEST.sitekey) {
+  $("#sug").hidden = false;
+  const rows = $("#sugrows"), msg = $("#sugmsg");
+  const opts = (a) => a.map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
+  const addRow = () => rows.insertAdjacentHTML("beforeend",
+    `<div class="sugrow"><input class="sn" placeholder="Ingrediënt" maxlength="40" aria-label="Ingrediënt">` +
+    `<select class="sc" aria-label="Soort">${opts([["brood", "Brood"], ["kaas", "Kaas"], ["beleg", "Beleg"], ["groente", "Groente"], ["saus", "Saus"]])}</select>` +
+    `<select class="sw" aria-label="Waar heb je het">${opts([["thuis", "Thuis"], ["kantoor", "Kantoor"], ["beide", "Thuis en kantoor"]])}</select>` +
+    `<button type="button" class="alt" aria-label="Verwijder deze regel">×</button></div>`);
+  addRow();
+  $("#sugadd").onclick = () => rows.children.length < 10 && addRow();
+  rows.onclick = (e) => e.target.matches("button") && rows.children.length > 1 && e.target.parentNode.remove();
+  $("#ts").innerHTML = `<div class="cf-turnstile" data-sitekey="${SUGGEST.sitekey}"></div>`;
+  const t = document.createElement("script"); // via innerHTML ingevoegde scripts draaien niet
+  t.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"; t.async = true;
+  document.head.append(t);
+  $("#sugform").onsubmit = async (e) => {
+    e.preventDefault();
+    const items = [...rows.children].map((r) => ({ naam: r.querySelector(".sn").value.trim(), categorie: r.querySelector(".sc").value, waar: r.querySelector(".sw").value })).filter((i) => i.naam);
+    if (!items.length) return (msg.textContent = "Vul minstens één ingrediënt in.");
+    const f = new FormData(e.target);
+    try {
+      const r = await fetch(SUGGEST.worker, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items, token: f.get("cf-turnstile-response"), website: f.get("website") }) });
+      msg.textContent = (await r.json()).msg;
+      if (r.ok) { rows.innerHTML = ""; addRow(); }
+    } catch { msg.textContent = "Versturen lukt niet, probeer het later nog eens."; }
+    window.turnstile?.reset();
+  };
+}
 
 $("#go").onclick = $("#again").onclick = make;
 $("#copy").onclick = async () => {

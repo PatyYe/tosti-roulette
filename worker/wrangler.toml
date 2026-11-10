@@ -1,0 +1,8 @@
+name = "tosti-suggesties"
+main = "index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://tosti.zonarr.nl"
+REPO = "PatyYe/tosti-roulette"
+# Geheimen zet je met `wrangler secret put`: GITHUB_TOKEN en TURNSTILE_SECRET
