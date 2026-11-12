@@ -13,7 +13,7 @@ Eén bestand, `index.html`, zonder build of dependencies. Open het in een browse
 - **Pittigheid.** Niks, een snuf chilivlokken, sambal of een extra dikke laag sambal. Sambal ligt als smeersel direct onder of boven het brood. Verrassing kiest willekeurig.
 - **Uitsluiten.** Pinda, noten, melk, ei, vis, mosterd en groente komen dan niet voor.
 
-Chaos zet extra kaas en extra vlees vast, zet pittigheid op Verrassing en laat "niks" niet toe. Er zit ook een geheimpje in: typ `chaos` ergens op de pagina.
+Chaos zet extra kaas en extra vlees vast, zet pittigheid op Verrassing en laat "niks" niet toe.
 
 Het uitsluitfilter kijkt alleen naar het beleg zelf. Sporen en wat er in brood, ham of sauzen zit controleert de eter zelf.
 

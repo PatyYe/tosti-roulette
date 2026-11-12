@@ -29,16 +29,6 @@ legend{font-weight:700;padding:0 6px}
 .sugrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .sugrow input,.sugrow select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 .sugrow .sn{flex:1 1 200px}
-.balk{height:22px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
-#balkvul{height:100%;width:0;background:var(--cheese)}
-/* Laadvenster staat buiten <main>, zodat het niet meeschudt met de tekst en vast bovenin blijft */
-#laden{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(560px,92vw);z-index:10;background:var(--card);color:var(--ink);border:3px solid var(--line);border-radius:10px;padding:14px 16px}
-#laden::before{content:"";position:absolute;inset:-10px;border:4px dashed var(--accent);border-radius:16px;pointer-events:none}
-#laden[hidden]{display:none}
-#ladentekst{margin:10px 0 0;font-weight:700;font-size:1.1rem}
-#balkvul{background:repeating-linear-gradient(45deg,var(--cheese) 0 14px,var(--accent) 14px 28px);background-size:40px 40px}
-@keyframes trip{0%{transform:translate(-4px,3px) rotate(-1.2deg)}25%{transform:translate(4px,-2px) rotate(1deg)}50%{transform:translate(-3px,-4px) rotate(-.6deg)}75%{transform:translate(3px,4px) rotate(1.2deg)}100%{transform:translate(-4px,3px) rotate(-1.2deg)}}
-@keyframes streep{to{background-position:40px 0}}
 .scroll{overflow-x:auto;margin-top:8px}
 #lijstbody{border-collapse:collapse;width:100%;font-size:.95rem}
 #lijstbody th,#lijstbody td{text-align:left;padding:5px 10px;border-bottom:1px solid color-mix(in srgb,var(--line) 25%,transparent);white-space:nowrap}
@@ -73,14 +63,6 @@ button.alt{background:var(--card);color:var(--ink)}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .warn{color:var(--accent);font-weight:700}
 footer{margin-top:28px;font-size:.85rem;opacity:.7}
-@keyframes gek{0%{transform:rotate(-2deg) scale(1)}25%{transform:rotate(3deg) scale(1.03)}50%{transform:rotate(-3deg) skewX(5deg)}75%{transform:rotate(2deg) scale(.97)}100%{transform:rotate(-2deg)}}
-@keyframes kleur{to{filter:hue-rotate(360deg)}}
-body.chaos main{animation:gek .6s infinite,kleur 2s linear infinite}
-body.chaos #laden::before{animation:trip .45s steps(1) infinite}
-body.chaos #balkvul{animation:streep .5s linear infinite}
-body.chaos .layer{animation:gek .35s infinite alternate}
-body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
-@media(prefers-reduced-motion:reduce){body.chaos,body.chaos *,body.chaos #laden::before{animation:none!important}}
 </style>
 </head>
 <body>
@@ -176,10 +158,6 @@ body.chaos .rij:nth-child(even) .layer{animation-direction:alternate-reverse}
 <footer>Halal is hier geen varken en geen alcohol. Wil je het zeker weten, koop het vlees bij een halal slager. Het filter kijkt alleen naar het beleg zelf. Sporen en wat er in brood, ham of sauzen zit controleer je zelf.</footer>
 </main>
 
-<div id="laden" role="status" hidden>
-<div class="balk"><div id="balkvul"></div></div>
-<p id="ladentekst"></p>
-</div>
 
 <script>
 // v = vegetarisch, n = vegan, h = halal, w = minimale gekte (0 normaal, 1 apart, 2 chaos)
@@ -317,29 +295,23 @@ const syncChaos = () => {
 };
 document.querySelectorAll("input[name=wild]").forEach((r) => (r.onchange = syncChaos));
 
-// easter egg: typ "chaos" ergens op de pagina
-let typed = "", busy = false;
-const LADEN = ["Kaas aan het raspen…", "Sambal aan het roeren…", "Brood aan het smeren…", "Toch maar extra kaas erbij…", "Pan voorverwarmen…", "Bijna klaar…"];
-document.addEventListener("keydown", (e) => {
-  typed = (typed + e.key).slice(-5).toLowerCase();
-  if (typed !== "chaos" || busy) return;
-  busy = true;
-  document.querySelector("input[name=wild][value='2']").checked = true;
-  syncChaos();
-  $("#out").style.display = "none";
-  $("#laden").hidden = false;
-  document.body.classList.add("chaos");
-  const duur = 5000, start = Date.now();
-  const iv = setInterval(() => {
-    const p = Math.min((Date.now() - start) / duur, 1); // de balk is JS, dus hij blijft ook zonder animaties zichtbaar
-    $("#balkvul").style.width = p * 100 + "%";
-    $("#ladentekst").textContent = LADEN[Math.min(Math.floor(p * LADEN.length), LADEN.length - 1)] + " " + Math.round(p * 100) + "%";
-    if (p < 1) return;
-    clearInterval(iv);
-    $("#laden").hidden = true;
-    make();
-    setTimeout(() => { document.body.classList.remove("chaos"); busy = false; }, 1500);
-  }, 100);
+// Verborgen extraatje: zit versleuteld in de pagina en komt pas tevoorschijn als je het geheime woord typt.
+const EGG = {"n":5,"s":"hiKqqkTNxdmAagLLpE/Q5g==","i":"m24i7pKX1k28Y5zG","c":"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","h":"6a97bba7ad58fe741f620e539aa30b94e1cd1ea35b1df942fce20dbde9b9bcc0"};
+let typed = "", eggP;
+const b64 = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+const sha = async (t) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+const laadEgg = async (woord) => {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(woord), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(EGG.s), iterations: 100000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const code = new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(EGG.i) }, key, b64(EGG.c)));
+  return new Function("api", code)({ make, syncChaos, $ });
+};
+document.addEventListener("keydown", async (e) => {
+  if (e.key.length !== 1 || !window.crypto?.subtle) return; // zonder https of oude browser doet het extraatje niets
+  typed = (typed + e.key).slice(-EGG.n).toLowerCase();
+  if (typed.length < EGG.n || (await sha(EGG.s + typed)) !== EGG.h) return;
+  eggP ||= laadEgg(typed);
+  (await eggP)();
 });
 
 
